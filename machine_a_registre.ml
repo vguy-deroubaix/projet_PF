@@ -54,8 +54,8 @@ type param = LabelParam of ((int Register.t)*label)
             | LabelExCouple of (label*exit)
 ;;
 
-type instruction = Mono1S of (LabelParam->(int Register.t)) (*un parametre une sortie*)
-                  | Duo1S of (LabelCouple->(int Register.t)) (*deux parametres une sortie*)
+type instruction = Mono1S of (LabelParam->exit) (*un parametre une sortie*)
+                  | Duo1S of (LabelCouple->exit) (*deux parametres une sortie*)
                   | Mono2S of (Exitparam->exit) (*un parametre deux sorties*)
                   | Duo2S of (LabelExCouple->exit) (*deux parametres deux sorties*)
 ;;
@@ -64,14 +64,15 @@ type instruction = Mono1S of (LabelParam->(int Register.t)) (*un parametre une s
 type programm = Programm of (instruction*param) list;;
 
 
-let rec execution (Programm programme) registre = 
+let execution (Programm programme) registre = 
+  let execution ligne (Programm programme) registre 
   match programme with 
     | [] -> []
     | (instruction,param)::t -> begin match instruction with
-                                  | Mono1S(instruction) -> 
-                                  | Duo1S(instruction)
-                                  | Mono2S(instruction)
-                                  | Duo2S(instruction)
+                                  | Mono1S(instruction) -> instruction param 
+                                  | Duo1S(instruction) -> instruction param
+                                  | Mono2S(instruction) -> instruction param 
+                                  | Duo2S(instruction) -> instruction param
 
                                    
 ;;
