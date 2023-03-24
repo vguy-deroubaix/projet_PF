@@ -25,54 +25,77 @@ end
 
 module Register = Map.Make(RegistersOrdonee)
 
-type exit = Exit of int ;; (*ligne number*)
+type ligne = Ligne of int ;; (*ligne number*)
 
-let inc registers n = (Register.update n (fun e -> match e with
-                                                    | None -> None
-                                                    | Some e -> (Some (e+1))) registers)                            
+type param = LabelParam of {register : int Register.t ;label : label; ligne : ligne} 
+            | LabelCouple of {label1 : label;label2 : label; ligne :ligne}
+            | Exitparam of {ligne : ligne}
+            | LabelExCouple of {label1 : label;label2 : label; ligneN :ligne; ligne :ligne}
 ;;
 
-let dec registers n = if (Register.find n registers) > 0 
+type instruction = Mono1S of (int Register.t-> label -> ligne->int Register.t*ligne) (*un parametre une sortie*)
+                  | Duo1S of (int Register.t->label->label->ligne->int Register.t*ligne) (*deux parametres une sortie*)
+                  | Mono2S of (ligne->ligne) (*un parametre deux sorties*)
+                  | Duo2S of (int Register.t->label->ligne->ligne) (*deux parametres deux sorties*)
+;;
+
+
+let inc register n (Ligne ligne) = ((Register.update n (fun e -> match e with 
+                                                    | None -> None
+                                                    | Some e -> (Some (e+1))) register),(Ligne (ligne + 1)))                    
+;;                                                    
+
+let dec registers n (Ligne ligne) = if (Register.find n registers) > 0 
                         then 
-                            (Register.update n (fun e -> match e with
+                            ((Register.update n (fun e -> match e with                          
                                                     | None -> None
-                                                    | Some e -> (Some (e-1))) registers) 
-                        else registers
-;;
-let clear registers n = (Register.update n (fun e -> match e with
+                                                    | Some e -> (Some (e-1))) registers), Ligne (ligne+1)) 
+                        else (registers, Ligne (ligne+1))                            
+;;                        
+let clear registers n (Ligne ligne) = ((Register.update n (fun e -> match e with
                                                     | None -> None
-                                                    | Some e -> (Some 0)) registers)                            
+                                                    | Some e -> (Some 0)) registers), Ligne (ligne+1))                    
+;;                                                    
+
+let jump (Ligne n) = (Ligne n) ;;
+
+let jumpM register m (Ligne n) (Ligne ligne)= if (Register.find m register) = 0 then (Ligne n) else Ligne (ligne+1) ;;
+
+
+let compare_line (n :ligne) (m :ligne) = 
+  if n > m
+    then 
+        1
+else 
+    if n = m
+        then 
+            0
+        else 
+            -1
 ;;
 
-let jump (Exit n) = (Exit n) ;;
+module InstructionOrdonnee = struct
+  type t = ligne;;
+  let compare = compare_line;;
+end
 
-let jumpM register m (Exit n) = if (Register.find m register) = 0 then n else  ;;
+module Programm = Map.Make(InstructionOrdonnee)
 
-type param = LabelParam of ((int Register.t)*label) 
-            | LabelCouple of ((int Register.t)*label*label) 
-            | Exitparam of exit
-            | LabelExCouple of (label*exit)
-;;
-
-type instruction = Mono1S of (LabelParam->exit) (*un parametre une sortie*)
-                  | Duo1S of (LabelCouple->exit) (*deux parametres une sortie*)
-                  | Mono2S of (Exitparam->exit) (*un parametre deux sorties*)
-                  | Duo2S of (LabelExCouple->exit) (*deux parametres deux sorties*)
-;;
-
-
-type programm = Programm of (instruction*param) list;;
-
-
-let execution (Programm programme) registre = 
-  let execution ligne (Programm programme) registre 
-  match programme with 
-    | [] -> []
-    | (instruction,param)::t -> begin match instruction with
-                                  | Mono1S(instruction) -> instruction param 
-                                  | Duo1S(instruction) -> instruction param
-                                  | Mono2S(instruction) -> instruction param 
-                                  | Duo2S(instruction) -> instruction param
-
-                                   
+let execution programm register = 
+  let arret ligne programm = (Programm.mem ligne programm)
+  in
+  let rec execution_aux (Ligne ligne) programme registre fin =
+    match (Programm.find (Ligne ligne) programm) with 
+        | (Mono1S instruction,LabelParam param) -> let (regis,ligne) = (instruction registre param.label param.ligne) in
+                                                   let fin = arret ligne programme in 
+                                                   execution_aux ligne programm regis fin    
+        | (Duo1S instruction,LabelCouple param) -> let (regis,ligne) = (instruction registre param.label1 param.label2 param.ligne) in
+                                                   let fin = arret ligne programme in 
+                                                   execution_aux ligne programm registre fin
+        | (Mono2S instruction,Exitparam param) -> let fin = arret param.ligne programm in 
+                                                  execution_aux (instruction param.ligne) programm registre fin
+        | (Duo2S instruction,LabelExCouple param) -> let fin = arret param.ligne programm in
+                                                     execution_aux (instruction registre param.label1 param.ligne) programm registre fin
+        | (_) -> failwith("crash")  
+  in execution_aux (Ligne 1) programm register 
 ;;
