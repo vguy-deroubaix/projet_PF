@@ -82,20 +82,24 @@ end
 module Programm = Map.Make(InstructionOrdonnee)
 
 let execution programm register = 
-  let arret ligne programm = (Programm.mem ligne programm)
+  let arret ligne programm = not (Programm.mem ligne programm)
   in
   let rec execution_aux (Ligne ligne) programme registre fin =
-    match (Programm.find (Ligne ligne) programm) with 
-        | (Mono1S instruction,LabelParam param) -> let (regis,ligne) = (instruction registre param.label param.ligne) in
-                                                   let fin = arret ligne programme in 
-                                                   execution_aux ligne programm regis fin    
-        | (Duo1S instruction,LabelCouple param) -> let (regis,ligne) = (instruction registre param.label1 param.label2 param.ligne) in
-                                                   let fin = arret ligne programme in 
-                                                   execution_aux ligne programm registre fin
-        | (Mono2S instruction,Exitparam param) -> let fin = arret param.ligne programm in 
-                                                  execution_aux (instruction param.ligne) programm registre fin
-        | (Duo2S instruction,LabelExCouple param) -> let fin = arret param.ligne programm in
-                                                     execution_aux (instruction registre param.label1 param.ligne) programm registre fin
-        | (_) -> failwith("crash")  
-  in execution_aux (Ligne 1) programm register 
+    if fin 
+      then 
+        registre
+      else
+        match (Programm.find (Ligne ligne) programm) with 
+            | (Mono1S instruction,LabelParam param) -> let (regis,ligne) = (instruction registre param.label param.ligne) in
+                                                      let fin = arret ligne programme in 
+                                                      execution_aux ligne programm regis fin    
+            | (Duo1S instruction,LabelCouple param) -> let (regis,ligne) = (instruction registre param.label1 param.label2 param.ligne) in
+                                                      let fin = arret ligne programme in 
+                                                      execution_aux ligne programm registre fin
+            | (Mono2S instruction,Exitparam param) -> let fin = arret param.ligne programm in 
+                                                      execution_aux (instruction param.ligne) programm registre fin
+            | (Duo2S instruction,LabelExCouple param) -> let fin = arret param.ligne programm in
+                                                        execution_aux (instruction registre param.label1 param.ligne) programm registre fin
+            | (_) -> failwith("crash")  
+  in execution_aux (Ligne 1) programm register false
 ;;
