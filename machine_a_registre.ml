@@ -59,7 +59,7 @@ let jumpM register m (Line n) (Line line) = if (Register.find m register) = 0 th
 
 type param = LabelParam of {register: int Register.t; label: label; line: line} (*Pour Inc et Dec et clear*)
             | LabelCouple of {label1: label; label2: label; line: line} (*Pour copy*) 
-            | Exitparam of {line: line} (*Pour jump*)
+            | ExitParam of {line: line} (*Pour jump*)
             | LabelExCouple of {label1: label; lineN: line; line: line} (*Pour jumpM*) 
 ;;
 
@@ -71,37 +71,42 @@ type instruction = Mono1S of (int Register.t -> label -> line -> int Register.t*
 (*----------------------------------------------------------------------------------------------*)
 (* On passe à la création de nos opérations arithmétiques. Pour cela, on créer un type programme représentant une liste d'instructions donc un set d'instructions.*)
 
-type programm = Programm of (instruction*param) list;;
 
-let rec parcours (Programm liste) tmp =
+
+let rec parcours liste tmp =
 	match liste with
-	|[] -> liste
-	|x::s -> if tmp == 1 then
-			[x]@s	
+	|[] -> []
+	|_ -> if tmp != 1 then
+			parcours liste (tmp-1)
 		 else
-			parcours (Programm s) (tmp-1)
+			liste
 ;;
 
 
 (* fonction qui prend en paramètres une liste d'instructions et nos registres*)
-
-let  execution (Programm programm) registers = 
-let rec execution' (Line line) (Programm programm) registers =
-	let test = parcours (Programm programm) line in
-		if test  == [] then
+(* Manière laborieuse: je force la variable programm a etre une liste de (instruction,param)*) 
+let  execution programm registers = 
+let rec execution' (Line line) programm registers =
+	let test = parcours programm line in
+		if test  == []  then
 			registers
 		else
-			 
-  			match test with
-			|Programm(Mono1S instruction, LabelParam param) -> let (register,line) = (instruction registers param.label param.line) in 
-								   execution' line programm registers
-			|Programm(Duo1S instruction, LabelCouple param) -> let (register,line) = (instruction registers param.label1 param.label2 param.line) in
-								  execution' line  programm registers
-			|Programm(Mono2S instruction, ExitParam param) -> execution' (instruction param.line) programm registers
-			|Programm(Duo2S instruction, LabelExCouple param) -> execution' (instruction param.label1 param.lineN param.line) programm registers
+			(*regle prend la valeur de l'instruction que l'on doit traiter*)
+			let regle = List.hd test in	
+  			match regle with
+			|(Mono1S instruction, LabelParam param) -> let (register,line) = (instruction registers param.label param.line) in 
+								   	execution' line programm registers
+
+			|(Duo1S instruction, LabelCouple param) -> let (register,line) = (instruction registers param.label1 param.label2 param.line) in
+								 	execution' line  programm registers
+
+			|(Mono2S instruction, ExitParam param) -> execution' (instruction param.line) programm registers
+
+			|(Duo2S instruction, LabelExCouple param) -> execution' (instruction registers param.label1 param.lineN param.line) programm registers
+
 			|(_) -> failwith("error")
+
 in execution' (Line 1) programm registers
 
 ;;
-
-(* TODO FAIRE AVEC LES LISTES, CREER UNE FONCTION RECURSIVE LISTE QUI PARCOURS LA LISTE JUSQU A LA n EME CASE*) 
+ 
