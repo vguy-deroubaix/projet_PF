@@ -30,13 +30,13 @@ type ligne = Ligne of int ;; (*ligne number*)
 type param = LabelParam of {register : int Register.t ;label : label; ligne : ligne} 
             | LabelCouple of {label1 : label;label2 : label; ligne :ligne}
             | Exitparam of {ligne : ligne}
-            | LabelExCouple of {label1 : label;label2 : label; ligneN :ligne; ligne :ligne}
+            | LabelExCouple of {label1 : label; ligneN :ligne; ligne :ligne}
 ;;
 
 type instruction = Mono1S of (int Register.t-> label -> ligne->int Register.t*ligne) (*un parametre une sortie*)
                   | Duo1S of (int Register.t->label->label->ligne->int Register.t*ligne) (*deux parametres une sortie*)
                   | Mono2S of (ligne->ligne) (*un parametre deux sorties*)
-                  | Duo2S of (int Register.t->label->ligne->ligne) (*deux parametres deux sorties*)
+                  | Duo2S of (int Register.t->label->ligne->ligne->ligne) (*deux parametres deux sorties*)
 ;;
 
 
@@ -99,7 +99,7 @@ let execution programm register =
             | (Mono2S instruction,Exitparam param) -> let fin = arret param.ligne programm in 
                                                       execution_aux (instruction param.ligne) programm registre fin
             | (Duo2S instruction,LabelExCouple param) -> let fin = arret param.ligne programm in
-                                                        execution_aux (instruction registre param.label1 param.ligne) programm registre fin
+                                                        execution_aux (instruction registre param.label1 param.ligneN param.ligne) programm registre fin
             | (_) -> failwith("crash")  
   in execution_aux (Ligne 1) programm register false
 ;;
