@@ -74,28 +74,25 @@ type instruction = Mono1S of (int Register.t -> label -> line -> int Register.t*
 type programm = Programm of (instruction*param) list;;
 
 let rec parcours (Programm liste) tmp =
-	match tmp with
-	|1 -> begin match liste with
-		    |[] -> []
-		    |_ -> liste
-		end
-	|_ -> begin match liste with
-		    |[] -> []
-		    |(instruction,param)::res -> parcours (Programm res) (tmp-1)
-		end
+	match liste with
+	|[] -> liste
+	|x::s -> if tmp == 1 then
+			[x]@s	
+		 else
+			parcours (Programm s) (tmp-1)
 ;;
+
 
 (* fonction qui prend en paramètres une liste d'instructions et nos registres*)
 
 let  execution (Programm programm) registers = 
 let rec execution' (Line line) (Programm programm) registers =
 	let test = parcours (Programm programm) line in
-		let regle = (instruction,param)::test in
 		if test  == [] then
 			registers
 		else
 			 
-  			match regle with
+  			match test with
 			|Programm(Mono1S instruction, LabelParam param) -> let (register,line) = (instruction registers param.label param.line) in 
 								   execution' line programm registers
 			|Programm(Duo1S instruction, LabelCouple param) -> let (register,line) = (instruction registers param.label1 param.label2 param.line) in
