@@ -57,10 +57,10 @@ let jumpM register m (Line n) (Line line) = if (Register.find m register) = 0 th
 (*------------------------------------------------------------------------------------------------*)
 (*Création du type param pour les différents paramètres. On créer également un type instuction car les instructions n'ont pas le même nombre de sortie*)
 
-type param = LabelParam of {register: int Register.t; label: label; line: line} (*Pour Inc et Dec et clear*)
+type param = LabelParam of {label: label; line: line} (*Pour Inc et Dec et clear*)
             | LabelCouple of {label1: label; label2: label; line: line} (*Pour copy*) 
             | ExitParam of {line: line} (*Pour jump*)
-            | LabelExCouple of {label1: label; lineN: line; line: line} (*Pour jumpM*) 
+            | LabelExCouple of {label: label; lineN: line; line: line} (*Pour jumpM*) 
 ;;
 
 type instruction = Mono1S of (int Register.t -> label -> line -> int Register.t*line) (*type est une fonction qui prend en entrée un le dico_registes, un label et une ligne. Elle renvoi un couple(dico_registres update,line)*)
@@ -73,40 +73,55 @@ type instruction = Mono1S of (int Register.t -> label -> line -> int Register.t*
 
 
 
-let rec parcours liste tmp =
+let rec parcours liste (Line tmp) =
 	match liste with
 	|[] -> []
-	|_ -> if tmp != 1 then
-			parcours liste (tmp-1)
+	|_ -> if (Line tmp) != (Line 1) then
+			parcours liste (Line (tmp-1))
 		 else
 			liste
 ;;
 
+let display_registers registers = Register.iter (fun key a -> print_int a) registers;;
 
 (* fonction qui prend en paramètres une liste d'instructions et nos registres*)
 (* Manière laborieuse: je force la variable programm a etre une liste de (instruction,param)*) 
 let  execution programm registers = 
 let rec execution' (Line line) programm registers =
-	let test = parcours programm line in
+	let test = parcours programm (Line line) in
 		if test  == []  then
 			registers
 		else
 			(*regle prend la valeur de l'instruction que l'on doit traiter*)
 			let regle = List.hd test in	
   			match regle with
-			|(Mono1S instruction, LabelParam param) -> let (register,line) = (instruction registers param.label param.line) in 
-								   	execution' line programm registers
+			|(Mono1S instruction, LabelParam param) -> let (update_registers,(Line line)) = (instruction registers param.label param.line) in 
+								   	execution' (Line line) programm update_registers
 
-			|(Duo1S instruction, LabelCouple param) -> let (register,line) = (instruction registers param.label1 param.label2 param.line) in
-								 	execution' line  programm registers
+			|(Duo1S instruction, LabelCouple param) -> let (update_registers,(Line line)) = (instruction registers param.label1 param.label2 param.line) in
+								 	execution' (Line line)  programm update_registers
 
 			|(Mono2S instruction, ExitParam param) -> execution' (instruction param.line) programm registers
 
-			|(Duo2S instruction, LabelExCouple param) -> execution' (instruction registers param.label1 param.lineN param.line) programm registers
+			|(Duo2S instruction, LabelExCouple param) -> execution' (instruction registers param.label param.lineN param.line) programm registers
 
 			|(_) -> failwith("error")
 
 in execution' (Line 1) programm registers
 
 ;;
- 
+(*-------------------------------------------------------------------------------------------------------*)
+(*Opération arithmétique*)
+
+let registers = List.fold_left (fun m (k,v) -> Register.add k v m) Register.empty [((Label 1), 4);((Label 2), 5)];;
+
+
+let addition_Instruction = [(Duo2S jumpM, LabelExCouple {label = (Label 2); lineN = (Line 5); line = (Line 1)});
+			    (Mono1S inc, LabelParam {label = (Label 1); line = (Line 2)});
+			    (Mono1S dec, LabelParam {label = (Label 2); line = (Line 3)}); 
+			    (Mono2S jump, ExitParam {line = (Line 1)})]
+;;
+
+let registers_2 = [];;
+let multiplication_Instruction = [];;
+(*let test = execution addition_Instruction registers;;*)
