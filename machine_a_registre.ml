@@ -281,4 +281,4 @@ let addition = Programm.add (Ligne 3) (Mono1S dec,LabelParam {label = (Label 1)}
 let addition = Programm.add (Ligne 4) (Mono2S jump,LigneParam {ligne = (Ligne 1)}) addition;; 
 
 (* Un autre exemple pour faire un calcul avec l'approche 2*)
-let registre = execution2 addition registre2;; 
+(*let registre = execution2 addition registre2;; *)
