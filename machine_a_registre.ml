@@ -111,26 +111,26 @@ let rec execution' (Ligne ligne) programm registers tmp =
 			let regle = List.hd test in	
   			match regle with
 			|(Mono1S instruction, LabelParam param) -> let (update_registers,(Ligne ligne)) = (instruction registers param.label (Ligne ligne)) in	
-									                              (print_string("Tour"^" "^string_of_int(tmp)^":");
-									                              print_newline();
-									                              display_registers update_registers; 
-								   	                            execution' (Ligne ligne) programm update_registers (tmp+1))
+									                               (print_string("Tour"^" "^string_of_int(tmp)^":");
+									                               print_newline();
+									                               display_registers update_registers; 
+								   	                             execution' (Ligne ligne) programm update_registers (tmp+1))
 
 			|(Duo1S instruction, LabelCouple param) -> let (update_registers,(Ligne ligne)) = (instruction registers param.label1 param.label2 (Ligne ligne)) in				 	
-                                                (print_string("Tour"^" "^string_of_int(tmp)^":");
-                                                print_newline();
-                                                display_registers update_registers; 
-                                                execution' (Ligne ligne)  programm update_registers (tmp+1))
+                                                 (print_string("Tour"^" "^string_of_int(tmp)^":");
+                                                 print_newline();
+                                                 display_registers update_registers; 
+                                                 execution' (Ligne ligne)  programm update_registers (tmp+1))
 
 			|(Mono2S instruction, LigneParam param) -> (print_string("Tour"^" "^string_of_int(tmp)^":");
-								                                print_newline();
-								                                display_registers registers;
-                                                execution' (instruction param.ligne) programm registers (tmp+1))
+								                                 print_newline();
+								                                 display_registers registers;
+                                                 execution' (instruction param.ligne) programm registers (tmp+1))
 
 			|(Duo2S instruction, LabelLigneCouple param) -> (print_string("Tour"^" "^string_of_int(tmp)^":");
-                                                  print_newline();
-                                                  display_registers registers; 
-                                                  execution' (instruction registers param.label param.ligneN (Ligne ligne)) programm registers (tmp+1))
+                                                      print_newline();
+                                                      display_registers registers; 
+                                                      execution' (instruction registers param.label param.ligneN (Ligne ligne)) programm registers (tmp+1))
 
 			|(_) -> failwith("error")
 in execution' (Ligne 1) programm registers 1
@@ -169,33 +169,29 @@ let execution2 programm register =
         match (Programm.find (Ligne ligne) programm) with 
             | (Mono1S instruction,LabelParam param) -> let (regis,nextligne) = (instruction registre param.label (Ligne ligne)) in
                                                        let fin = arret nextligne programme in 
-                                                                  (print_string("Tour"^" "^string_of_int(tmp)^":");
-									                              print_newline();
-									                              display_registers regis;
-                                                       
-                                                                  execution_aux nextligne programm regis fin (tmp+1))  
+                                                       (print_string("Tour"^" "^string_of_int(tmp)^":");
+									                                     print_newline();
+									                                     display_registers regis;
+                                                       execution_aux nextligne programm regis fin (tmp+1))  
 
             | (Duo1S instruction,LabelCouple param) -> let (regis,nextligne) = (instruction registre param.label1 param.label2 (Ligne ligne)) in
                                                        let fin = arret nextligne programme in
-                                                                    (print_string("Tour"^" "^string_of_int(tmp)^":");
-                                                                    print_newline();
-                                                                    display_registers regis;  
-                                                       
-                                                                    execution_aux nextligne programm regis fin (tmp+1))
+                                                       (print_string("Tour"^" "^string_of_int(tmp)^":");
+                                                       print_newline();
+                                                       display_registers regis;  
+                                                       execution_aux nextligne programm regis fin (tmp+1))
 
             | (Mono2S instruction,LigneParam param) ->  let fin = arret (Ligne ligne) programm in 
-                                                                (print_string("Tour"^" "^string_of_int(tmp)^":");
-								                                print_newline();
-								                                display_registers registre;
-                                                                
-                                                                execution_aux (instruction param.ligne) programm registre fin (tmp+1))
+                                                        (print_string("Tour"^" "^string_of_int(tmp)^":");
+                                                        print_newline();
+                                                        display_registers registre;        
+                                                        execution_aux (instruction param.ligne) programm registre fin (tmp+1))
 
             | (Duo2S instruction,LabelLigneCouple param) -> let fin = arret (Ligne ligne) programm in
-                                                                   (print_string("Tour"^" "^string_of_int(tmp)^":");
-                                                                    print_newline();
-                                                                    display_registers registre; 
-                                                                
-                                                                     execution_aux (instruction registre param.label param.ligneN (Ligne ligne)) programm registre fin (tmp+1)) 
+                                                            (print_string("Tour"^" "^string_of_int(tmp)^":");
+                                                            print_newline();
+                                                            display_registers registre; 
+                                                            execution_aux (instruction registre param.label param.ligneN (Ligne ligne)) programm registre fin (tmp+1)) 
             | (_) -> failwith("crash")  
   in execution_aux (Ligne 1) programm register false 1
 ;;
@@ -285,4 +281,4 @@ let addition = Programm.add (Ligne 3) (Mono1S dec,LabelParam {label = (Label 1)}
 let addition = Programm.add (Ligne 4) (Mono2S jump,LigneParam {ligne = (Ligne 1)}) addition;; 
 
 (* Un autre exemple pour faire un calcul avec l'approche 2*)
-(*let registre = execution2 addition registre2;; *)
+let registre = execution2 addition registre2;; 
